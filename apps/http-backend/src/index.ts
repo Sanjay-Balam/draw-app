@@ -3,21 +3,37 @@ import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "@repo/backend-common/config";
 import { middleware } from "./middleware";
 import {CreateUserSchema} from "@repo/common/types"
+import { prismaClient } from "@repo/db/client";
 const app = express();
 
 
 app.post("/signup", (req,res)=> {
     // db call 
-    const data = CreateUserSchema.safeParse(req.body);
-    if(!data.success) {
+    const ParsedData = CreateUserSchema.safeParse(req.body);
+    if(!ParsedData.success) {
         res.json({
             message : "Incorrect Inputs"
         });
         return ;
     }
-    res.json({
-        userId: 123
-    })
+    try {
+        prismaClient.user.create({
+            data:{
+                email : ParsedData.data?.username,
+                password : ParsedData.data.password,
+                name : ParsedData.data.name
+            }
+        });
+    
+        res.json({
+            userId: 123
+        });
+    }
+    catch(e) {
+        res.status(411).json({
+            message : "User already exist with this username"
+        })   
+    }
 });
 
 
